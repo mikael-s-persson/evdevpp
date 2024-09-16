@@ -6,7 +6,7 @@
 #include <type_traits>
 
 #include "evdevpp/util.h"
-#include "info.h"
+#include "evdevpp/info.h"
 #include "linux/uinput.h"
 
 namespace evdevpp {

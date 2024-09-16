@@ -1,7 +1,6 @@
 #include "evdevpp/events.h"
 
 #include "evdevpp/ecodes.h"
-#include "events.h"
 
 namespace evdevpp {
 
