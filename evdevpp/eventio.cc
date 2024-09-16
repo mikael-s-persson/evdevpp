@@ -19,9 +19,8 @@ absl::StatusOr<bool> EventIO::Wait(absl::Duration timeout) const {
 }
 
 absl::StatusOr<InputEvent> EventIO::ReadOne() const {
-  struct input_event event;
-
-  int n = ::read(fd_.Fd(), &event, sizeof(event));
+  input_event event{};
+  auto n = ::read(fd_.Fd(), &event, sizeof(event));
 
   if (n < 0) {
     return absl::ErrnoToStatus(errno, "ReadOne input event failed");
@@ -36,11 +35,11 @@ absl::StatusOr<InputEvent> EventIO::ReadOne() const {
 absl::StatusOr<std::vector<InputEvent>> EventIO::ReadAll() const {
   std::vector<InputEvent> result;
 
-  std::array<struct input_event, 64> events;
-  constexpr std::size_t event_size = sizeof(struct input_event);
+  std::array<input_event, 64> events{};
+  constexpr std::size_t kEventSize = sizeof(struct input_event);
 
   while (true) {
-    int nread = ::read(fd_.Fd(), events.data(), event_size * events.size());
+    auto nread = ::read(fd_.Fd(), events.data(), kEventSize * events.size());
 
     if (nread < 0) {
       if (errno == EAGAIN) {
@@ -50,7 +49,7 @@ absl::StatusOr<std::vector<InputEvent>> EventIO::ReadAll() const {
     }
 
     // Add the list of events
-    for (unsigned i = 0; i < nread / event_size; i++) {
+    for (unsigned i = 0; i < nread / kEventSize; i++) {
       result.emplace_back(
           absl::TimeFromTimeval({.tv_sec = events[i].input_event_sec,
                                  .tv_usec = events[i].input_event_usec}),
@@ -61,8 +60,8 @@ absl::StatusOr<std::vector<InputEvent>> EventIO::ReadAll() const {
 
 absl::Status EventIO::Write(std::uint16_t etype, std::uint16_t code,
                             std::int32_t value) const {
-  struct input_event event;
-  struct timeval tval = absl::ToTimeval(absl::Now());
+  input_event event{};
+  timeval tval = absl::ToTimeval(absl::Now());
   event.input_event_usec = tval.tv_usec;
   event.input_event_sec = tval.tv_sec;
   event.type = etype;

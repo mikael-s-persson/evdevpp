@@ -7,7 +7,6 @@ cc_library(
         "eventio.cc",
         "events.cc",
         "info.cc",
-        "util.cc",
         "user_device.cc",
     ],
     hdrs = [
@@ -16,7 +15,6 @@ cc_library(
         "events.h",
         "info.h",
         "user_device.h",
-        "util.h",
     ],
     deps = [
         ":ecodes",

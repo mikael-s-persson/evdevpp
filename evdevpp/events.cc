@@ -28,6 +28,10 @@ EventType ExpectedEventType() {
     return EventType::kSnd;
   } else if constexpr (std::is_same_v<ECodeType, Autorepeat>) {
     return EventType::kRep;
+  } else if constexpr (std::is_same_v<ECodeType, ForceFeedback>) {
+    return EventType::kFfStatus;
+  } else if constexpr (std::is_same_v<ECodeType, UIForceFeedback>) {
+    return EventType::kUinput;
   } else {
     return EventType::kMax;
   }
@@ -51,19 +55,21 @@ AnyInputEvent CategorizeImpl(InputEvent uncategorized_ev) {
 
 }  // namespace
 
-AnyInputEvent AnyInputEvent::Categorize(InputEvent uncategorized_ev) {
+AnyInputEvent AnyInputEvent::Categorize(const InputEvent& uncategorized_ev) {
   // Start by checking the declared type.
   AnyInputEvent result =
       CategorizeImpl<true, KeyEvent, RelEvent, AbsEvent, SynchEvent, MiscEvent,
-                     SwitchEvent, LEDEvent, SoundEvent, AutorepeatEvent>(
+                     SwitchEvent, LEDEvent, SoundEvent, AutorepeatEvent,
+                     ForceFeedbackEvent, UIForceFeedbackEvent>(
           uncategorized_ev);
-  if (result.base().IsInCategory()) {
+  if (result.Base().IsInCategory()) {
     return result;
   }
   // Fall back to trying all event code types.
   return CategorizeImpl<false, KeyEvent, RelEvent, AbsEvent, SynchEvent,
                         MiscEvent, SwitchEvent, LEDEvent, SoundEvent,
-                        AutorepeatEvent>(uncategorized_ev);
+                        AutorepeatEvent, ForceFeedbackEvent,
+                        UIForceFeedbackEvent>(uncategorized_ev);
 }
 
 }  // namespace evdevpp

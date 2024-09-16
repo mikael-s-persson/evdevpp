@@ -32,3 +32,16 @@ git_repository(
     commit = "6c8631277e2c5a15eece2696695c8df6ceee4b86",
     remote = "https://github.com/dallison/cpp_toolbelt.git",
 )
+
+# Hedron's Compile Commands Extractor for Bazel
+# https://github.com/hedronvision/bazel-compile-commands-extractor
+# bazel run --config=libc++ @hedron_compile_commands//:refresh_all -- --config=libc++
+bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+git_override(
+    module_name = "hedron_compile_commands",
+    commit = "1e08f8e0507b6b6b1f4416a9a22cf5c28beaba93",
+    patches = ["//third_party:hedron_compile_commands.patch"],
+    remote = "https://github.com/hedronvision/bazel-compile-commands-extractor.git",
+    # Replace the commit hash (above) with the latest (https://github.com/hedronvision/bazel-compile-commands-extractor/commits/main).
+    # Even better, set up Renovate and let it do the work for you (see "Suggestion: Updates" in the README).
+)

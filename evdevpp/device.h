@@ -12,6 +12,13 @@
 
 namespace evdevpp {
 
+// List readable character devices in `input_device_dir`.
+std::vector<std::string> ListDevices(
+    std::string_view input_device_dir = "/dev/input");
+
+// Check if `filename` is a readable and writable character device.
+bool IsDevice(const std::string& filename);
+
 // A linux input device from which input events can be read.
 class InputDevice : public EventIO {
  public:
@@ -35,8 +42,11 @@ class InputDevice : public EventIO {
     const InputDevice* parent;
     explicit ScopedGrab(const InputDevice* parent_) : parent(parent_) {}
     ScopedGrab(const ScopedGrab&) = delete;
-    ScopedGrab(ScopedGrab&& rhs) : parent(rhs.parent) { rhs.parent = nullptr; }
-    ScopedGrab& operator=(ScopedGrab rhs) {
+    ScopedGrab& operator=(const ScopedGrab&) = delete;
+    ScopedGrab(ScopedGrab&& rhs) noexcept : parent(rhs.parent) {
+      rhs.parent = nullptr;
+    }
+    ScopedGrab& operator=(ScopedGrab&& rhs) noexcept {
       ScopedGrab tmp{std::move(*this)};
       parent = rhs.parent;
       rhs.parent = nullptr;
@@ -58,7 +68,8 @@ class InputDevice : public EventIO {
   }
 
   // Get device properties and quirks.
-  absl::StatusOr<absl::flat_hash_set<std::uint16_t>> Properties() const;
+  [[nodiscard]] absl::StatusOr<absl::flat_hash_set<std::uint16_t>> Properties()
+      const;
 
   [[nodiscard]] const DeviceInfo& Info() const { return info_; }
   [[nodiscard]] const std::string& DevPath() const { return path_; }
@@ -72,20 +83,22 @@ class InputDevice : public EventIO {
 
   absl::Status SetAbsoluteAxisInfo(AbsoluteAxis axis, const AbsInfo& abs_info);
 
-  absl::StatusOr<absl::flat_hash_set<std::uint16_t>> GetActiveKeys() const;
+  [[nodiscard]] absl::StatusOr<absl::flat_hash_set<std::uint16_t>>
+  GetActiveKeys() const;
 
-  absl::StatusOr<KeyRepeatInfo> GetRepeat() const;
+  [[nodiscard]] absl::StatusOr<KeyRepeatInfo> GetRepeat() const;
   absl::Status SetRepeat(const KeyRepeatInfo& rep_info) const;
 
   // Return currently set LED keys.
-  absl::StatusOr<absl::flat_hash_set<std::uint16_t>> LEDs() const;
+  [[nodiscard]] absl::StatusOr<absl::flat_hash_set<std::uint16_t>> LEDs() const;
   // Set the state of the selected LED.
   absl::Status SetLED(LED ev, std::int32_t value) const {
     return Write(EventType::kLed, ev, value);
   }
 
   // Upload a force feedback effect to a force feedback device.
-  absl::StatusOr<std::int16_t> UploadEffect(const AnyEffect& new_effect) const;
+  [[nodiscard]] absl::StatusOr<std::int16_t> UploadEffect(
+      const AnyEffect& new_effect) const;
 
   // Erase a force effect from a force feedback device. This also
   // stops the effect.
@@ -93,7 +106,7 @@ class InputDevice : public EventIO {
 
  private:
   std::string path_;
-  DeviceInfo info_;
+  DeviceInfo info_{};
   std::string name_;
   std::string phys_;
   std::string uniq_;

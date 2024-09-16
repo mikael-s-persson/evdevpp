@@ -36,12 +36,12 @@ namespace evdevpp {
 // The input core does not clamp reported values to the `[minimum, maximum]`
 // limits, such task is left to userspace.
 struct AbsInfo {
-  std::int32_t value;
-  std::int32_t minimum;
-  std::int32_t maximum;
-  std::int32_t fuzz;
-  std::int32_t flat;
-  std::int32_t resolution;
+  std::int32_t value = 0;
+  std::int32_t minimum = 0;
+  std::int32_t maximum = 0;
+  std::int32_t fuzz = 0;
+  std::int32_t flat = 0;
+  std::int32_t resolution = 0;
 };
 
 // Capabilities is a mapping of supported event types to lists of handled
@@ -70,32 +70,32 @@ struct CapabilitiesInfo {
 // `delay`: Amount of time that a key must be depressed before it will start
 //          to repeat (in milliseconds).
 struct KeyRepeatInfo {
-  std::uint32_t repeat_key_per_s;
-  absl::Duration delay;
+  std::uint32_t repeat_key_per_s = 0;
+  absl::Duration delay{};
 };
 
 // Device information.
 struct DeviceInfo {
-  std::uint16_t bustype;
-  std::uint16_t vendor;
-  std::uint16_t product;
-  std::uint16_t version;
+  std::uint16_t bustype = 0;
+  std::uint16_t vendor = 0;
+  std::uint16_t product = 0;
+  std::uint16_t version = 0;
 };
 
 // Defines scheduling of the force-feedback effect
 // `length`: duration of the effect
 // `delay`: delay before effect should start playing
 struct Replay {
-  absl::Duration length;
-  absl::Duration delay;
+  absl::Duration length{};
+  absl::Duration delay{};
 };
 
 // Defines what triggers the force-feedback effect
 // `button`: number of the button triggering the effect
 // `interval`: controls how soon the effect can be re-triggered
 struct Trigger {
-  std::uint16_t button;
-  absl::Duration interval;
+  std::uint16_t button = 0;
+  absl::Duration interval{};
 };
 
 // Defines force feedback effect
@@ -127,6 +127,8 @@ struct Effect {
   Effect() = default;
   Effect(const Effect&) = default;
   Effect& operator=(const Effect&) = default;
+  Effect(Effect&&) noexcept = default;
+  Effect& operator=(Effect&&) noexcept = default;
   virtual ~Effect() = default;
 
   // Type of the effect:
@@ -134,13 +136,17 @@ struct Effect {
   //  ForceFeedback::kSpring, ForceFeedback::kFriction, ForceFeedback::kDamper,
   //  ForceFeedback::kRumble, ForceFeedback::kInertia, or
   //  ForceFeedback::kCustom.
-  virtual ForceFeedback type() const { return ForceFeedback::kMax; }
+  [[nodiscard]] virtual ForceFeedback Type() const {
+    return ForceFeedback::kMax;
+  }
 
   virtual void ToData(void* data_ptr) const;
   virtual void FromData(const void* data_ptr);
 
   // Internal use.
-  virtual void CloneInplace(Effect* ptr) const { new (ptr) Effect(*this); }
+  virtual void CloneInplace(Effect* ptr) const noexcept {
+    new (ptr) Effect(*this);
+  }
 };
 
 // Generic force-feedback effect envelope
@@ -154,31 +160,35 @@ struct Effect {
 // value based on polarity of the default level of the effect.
 // Valid range for the attack and fade levels is 0x0000 - 0x7fff
 struct Envelope {
-  absl::Duration attack_length;
-  std::uint16_t attack_level;
-  absl::Duration fade_length;
-  std::uint16_t fade_level;
+  absl::Duration attack_length{};
+  std::uint16_t attack_level = 0;
+  absl::Duration fade_length{};
+  std::uint16_t fade_level = 0;
 };
 
 // Defines parameters of a constant force-feedback effect
 // `level`: strength of the effect; may be negative
 // `envelope`: envelope data
 struct ConstantEffect : Effect {
-  std::int16_t level;
-  Envelope envelope;
+  std::int16_t level = 0;
+  Envelope envelope{};
 
-  ForceFeedback type() const override { return ForceFeedback::kConstant; }
+  [[nodiscard]] ForceFeedback Type() const override {
+    return ForceFeedback::kConstant;
+  }
   void ToData(void* data_ptr) const override;
   void FromData(const void* data_ptr) override;
   // Internal use.
-  void CloneInplace(Effect* ptr) const override {
+  void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) ConstantEffect(*this);
   }
 };
 struct InertiaEffect : ConstantEffect {
-  ForceFeedback type() const override { return ForceFeedback::kInertia; }
+  [[nodiscard]] ForceFeedback Type() const override {
+    return ForceFeedback::kInertia;
+  }
   // Internal use.
-  void CloneInplace(Effect* ptr) const override {
+  void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) InertiaEffect(*this);
   }
 };
@@ -188,15 +198,19 @@ struct InertiaEffect : ConstantEffect {
 // `end_level`: final strength of the effect; may be negative
 // `envelope`: envelope data
 struct RampEffect : Effect {
-  std::int16_t start_level;
-  std::int16_t end_level;
-  Envelope envelope;
+  std::int16_t start_level = 0;
+  std::int16_t end_level = 0;
+  Envelope envelope{};
 
-  ForceFeedback type() const override { return ForceFeedback::kRamp; }
+  [[nodiscard]] ForceFeedback Type() const override {
+    return ForceFeedback::kRamp;
+  }
   void ToData(void* data_ptr) const override;
   void FromData(const void* data_ptr) override;
   // Internal use.
-  void CloneInplace(Effect* ptr) const override { new (ptr) RampEffect(*this); }
+  void CloneInplace(Effect* ptr) const noexcept override {
+    new (ptr) RampEffect(*this);
+  }
 };
 
 // Defines a spring, damper or friction force-feedback effect
@@ -206,43 +220,49 @@ struct RampEffect : Effect {
 // the right `left_coeff`: same for the left side `deadband`: size of the dead
 // zone, where no force is produced `center`: position of the dead zone
 struct Condition {
-  std::uint16_t right_saturation;
-  std::uint16_t left_saturation;
-  std::int16_t right_coeff;
-  std::int16_t left_coeff;
-  std::uint16_t deadband;
-  std::int16_t center;
+  std::uint16_t right_saturation = 0;
+  std::uint16_t left_saturation = 0;
+  std::int16_t right_coeff = 0;
+  std::int16_t left_coeff = 0;
+  std::uint16_t deadband = 0;
+  std::int16_t center = 0;
 };
 struct ConditionEffect : Effect {
   // One condition per axis.
-  std::array<Condition, 2> conditions;
+  std::array<Condition, 2> conditions{};
 
   void ToData(void* data_ptr) const override;
   void FromData(const void* data_ptr) override;
   // Internal use.
-  void CloneInplace(Effect* ptr) const override {
+  void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) ConditionEffect(*this);
   }
 };
 
 struct SpringEffect : ConditionEffect {
-  ForceFeedback type() const override { return ForceFeedback::kSpring; }
+  [[nodiscard]] ForceFeedback Type() const override {
+    return ForceFeedback::kSpring;
+  }
   // Internal use.
-  void CloneInplace(Effect* ptr) const override {
+  void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) SpringEffect(*this);
   }
 };
 struct DamperEffect : ConditionEffect {
-  ForceFeedback type() const override { return ForceFeedback::kDamper; }
+  [[nodiscard]] ForceFeedback Type() const override {
+    return ForceFeedback::kDamper;
+  }
   // Internal use.
-  void CloneInplace(Effect* ptr) const override {
+  void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) DamperEffect(*this);
   }
 };
 struct FrictionEffect : ConditionEffect {
-  ForceFeedback type() const override { return ForceFeedback::kFriction; }
+  [[nodiscard]] ForceFeedback Type() const override {
+    return ForceFeedback::kFriction;
+  }
   // Internal use.
-  void CloneInplace(Effect* ptr) const override {
+  void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) FrictionEffect(*this);
   }
 };
@@ -258,27 +278,31 @@ struct FrictionEffect : ConditionEffect {
 // `custom_data`: buffer of samples (FF_CUSTOM only)
 struct PeriodicEffect : Effect {
   // kSquare, kTriangle, kSine, kSawUp, kSawDown, kCustom
-  ForceFeedback waveform;
-  absl::Duration period;
-  std::int16_t magnitude;
-  std::int16_t offset;
-  std::uint16_t phase;
-  Envelope envelope;
-  std::uint32_t custom_len;
-  std::int16_t* custom_data;
+  ForceFeedback waveform{};
+  absl::Duration period{};
+  std::int16_t magnitude = 0;
+  std::int16_t offset = 0;
+  std::uint16_t phase = 0;
+  Envelope envelope{};
+  std::uint32_t custom_len = 0;
+  std::int16_t* custom_data = nullptr;
 
-  ForceFeedback type() const override { return ForceFeedback::kPeriodic; }
+  [[nodiscard]] ForceFeedback Type() const override {
+    return ForceFeedback::kPeriodic;
+  }
   void ToData(void* data_ptr) const override;
   void FromData(const void* data_ptr) override;
   // Internal use.
-  void CloneInplace(Effect* ptr) const override {
+  void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) PeriodicEffect(*this);
   }
 };
 struct CustomEffect : PeriodicEffect {
-  ForceFeedback type() const override { return ForceFeedback::kCustom; }
+  [[nodiscard]] ForceFeedback Type() const override {
+    return ForceFeedback::kCustom;
+  }
   // Internal use.
-  void CloneInplace(Effect* ptr) const override {
+  void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) CustomEffect(*this);
   }
 };
@@ -290,14 +314,16 @@ struct CustomEffect : PeriodicEffect {
 // Some rumble pads have two motors of different weight. `strong_magnitude`
 // represents the magnitude of the vibration generated by the heavy one.
 struct RumbleEffect : Effect {
-  std::uint16_t strong_magnitude;
-  std::uint16_t weak_magnitude;
+  std::uint16_t strong_magnitude = 0;
+  std::uint16_t weak_magnitude = 0;
 
-  ForceFeedback type() const override { return ForceFeedback::kRumble; }
+  [[nodiscard]] ForceFeedback Type() const override {
+    return ForceFeedback::kRumble;
+  }
   void ToData(void* data_ptr) const override;
   void FromData(const void* data_ptr) override;
   // Internal use.
-  void CloneInplace(Effect* ptr) const override {
+  void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) RumbleEffect(*this);
   }
 };
@@ -305,25 +331,31 @@ struct RumbleEffect : Effect {
 class AnyEffect {
  public:
   explicit AnyEffect(const Effect& rhs) : data_{.base = rhs} {
-    data_.base.~Effect();
-    rhs.CloneInplace(&data_.base);
+    Base().~Effect();
+    rhs.CloneInplace(&Base());
   }
   AnyEffect() : AnyEffect(Effect{}) {}
-  AnyEffect(const AnyEffect& rhs) : AnyEffect(rhs.data_.base) {}
-
-  AnyEffect& operator=(const AnyEffect& rhs) {
-    data_.base.~Effect();
-    rhs.data_.base.CloneInplace(&data_.base);
+  AnyEffect(const AnyEffect& rhs) : AnyEffect(rhs.Base()) {}
+  AnyEffect& operator=(const AnyEffect& rhs) noexcept {
+    if (this == &rhs) {
+      return *this;
+    }
+    Base().~Effect();
+    rhs.Base().CloneInplace(&Base());
     return *this;
   }
+  AnyEffect(AnyEffect&& rhs) noexcept : AnyEffect(rhs.Base()) {}
+  AnyEffect& operator=(AnyEffect&& rhs) noexcept {
+    return *this = static_cast<const AnyEffect&>(rhs);
+  }
+  ~AnyEffect() = default;
 
-  operator Effect&() { return data_.base; }
-  operator const Effect&() const { return data_.base; }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
+  [[nodiscard]] Effect& Base() { return data_.base; }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
+  [[nodiscard]] const Effect& Base() const { return data_.base; }
 
-  Effect& base() { return data_.base; }
-  const Effect& base() const { return data_.base; }
-
-  void ToData(void* data_ptr) const { base().ToData(data_ptr); }
+  void ToData(void* data_ptr) const { Base().ToData(data_ptr); }
   static AnyEffect FromData(const void* data_ptr);
 
  private:
@@ -338,21 +370,26 @@ class AnyEffect {
     CustomEffect custom;
     RumbleEffect rumble;
 
+    EffectUnion(const EffectUnion&) = delete;
+    EffectUnion(EffectUnion&&) = delete;
+    EffectUnion& operator=(const EffectUnion&) = delete;
+    EffectUnion& operator=(EffectUnion&&) = delete;
+
     ~EffectUnion() { base.~Effect(); }
   } data_;
 };
 
 struct UInputUpload {
-  std::uint32_t request_id;
-  std::int32_t retval;
-  AnyEffect effect;
-  AnyEffect old;
+  std::uint32_t request_id = 0;
+  std::int32_t retval = 0;
+  AnyEffect effect{};
+  AnyEffect old{};
 };
 
 struct UInputErase {
-  std::uint32_t request_id;
-  std::int32_t retval;
-  std::uint32_t effect_id;
+  std::uint32_t request_id = 0;
+  std::int32_t retval = 0;
+  std::uint32_t effect_id = 0;
 };
 
 }  // namespace evdevpp

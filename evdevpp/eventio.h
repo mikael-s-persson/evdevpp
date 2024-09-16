@@ -36,16 +36,16 @@ class EventIO {
   // Returns true if an event is available.
   // Returns false if the wait timed out.
   // Returns a status for a system error (errno).
-  absl::StatusOr<bool> Wait(absl::Duration timeout) const;
+  [[nodiscard]] absl::StatusOr<bool> Wait(absl::Duration timeout) const;
 
   // Read and return a single input event as an `InputEvent`.
   // A status `IsUnavailable(status)` means no pending input events.
   // Other returned statuses are system errors (errno).
-  absl::StatusOr<InputEvent> ReadOne() const;
+  [[nodiscard]] absl::StatusOr<InputEvent> ReadOne() const;
 
   // Read multiple input events from device. Return a vector of `InputEvent`.
   // Returned status indicates a system error.
-  absl::StatusOr<std::vector<InputEvent>> ReadAll() const;
+  [[nodiscard]] absl::StatusOr<std::vector<InputEvent>> ReadAll() const;
 
   // Inject an input event into the input subsystem. Events are
   // queued until a synchronization event is received.

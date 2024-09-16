@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <type_traits>
 
-#include "evdevpp/util.h"
 #include "evdevpp/info.h"
 #include "linux/uinput.h"
 
@@ -13,10 +12,16 @@ namespace evdevpp {
 
 namespace {
 
+template <typename... Args>
+int VarTempIOCTL(int fd, std::uint64_t req, Args&&... args) {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg) POSIX API
+  return ioctl(fd, req, std::forward<Args>(args)...);
+}
+
 template <typename CodeSet>
 absl::Status EnableEventCodes(int fd, std::uint16_t etype,
                               const CodeSet& codes) {
-  unsigned long req = 0;
+  std::uint64_t req = 0;
   switch (etype) {
     case EV_KEY:
       req = UI_SET_KEYBIT;
@@ -48,7 +53,7 @@ absl::Status EnableEventCodes(int fd, std::uint16_t etype,
                       EventType{etype}.ToString(), etype));
   }
 
-  if (ioctl(fd, UI_SET_EVBIT, etype) < 0) {
+  if (VarTempIOCTL(fd, UI_SET_EVBIT, etype) < 0) {
     return absl::ErrnoToStatus(errno, "Failed to enable event type");
   }
 
@@ -59,7 +64,7 @@ absl::Status EnableEventCodes(int fd, std::uint16_t etype,
     } else {
       ev_code = code.first;
     }
-    if (ioctl(fd, req, ev_code) < 0) {
+    if (VarTempIOCTL(fd, req, ev_code) < 0) {
       return absl::ErrnoToStatus(errno, "Failed to enable event code");
     }
   }
@@ -108,10 +113,8 @@ absl::StatusOr<InputDevice> FindDeviceLinux(const std::string& sysname) {
   for (int attempt = 0; attempt < 19; ++attempt) {
     if (auto dev_or = InputDevice::Open(device_path); dev_or.ok()) {
       return std::move(*dev_or);
-    } else {
-      absl::SleepFor(absl::Milliseconds(100));
-      continue;
     }
+    absl::SleepFor(absl::Milliseconds(100));
   }
 
   // Last attempt. If this fails, the status the last attempt is returned.
@@ -128,10 +131,10 @@ absl::StatusOr<InputDevice> FindDeviceFallback(const std::string& ui_name) {
   // There could also be another device with the same name already present,
   // make sure to select the newest one.
   // Strictly speaking, we cannot be certain that everything returned by
-  // list_devices() ends at event[0-9]+: it might return something like
+  // ListDevices() ends at event[0-9]+: it might return something like
   // "/dev/input/events_all". Find the devices that have the expected structure
   // only.
-  std::vector<std::string> all_devices = list_devices("/dev/input");
+  std::vector<std::string> all_devices = ListDevices("/dev/input");
   std::vector<std::string> candidate_devices;
   candidate_devices.reserve(all_devices.size());
   for (const auto& dev_path : all_devices) {
@@ -163,9 +166,9 @@ absl::StatusOr<InputDevice> FindDeviceFallback(const std::string& ui_name) {
 absl::StatusOr<InputDevice> FindDevice(int fd, const std::string& ui_name) {
 // If we have a recent Linux kernel, this should work.
 #if defined(__linux__) && defined(UI_GET_SYSNAME)
-  char sysname[64];
-  if (ioctl(fd, UI_GET_SYSNAME(sizeof(sysname)), &sysname) >= 0) {
-    auto dev_or = FindDeviceLinux(sysname);
+  std::array<char, 64> sysname{};
+  if (VarTempIOCTL(fd, UI_GET_SYSNAME(sysname.size()), sysname.data()) >= 0) {
+    auto dev_or = FindDeviceLinux(sysname.data());
     if (dev_or.ok()) {
       return std::move(*dev_or);
     }
@@ -198,27 +201,27 @@ absl::Status UserInputDevice::Setup(std::uint32_t max_effects) {
     abs_setup.absinfo.flat = absinfo.flat;
     abs_setup.absinfo.resolution = absinfo.resolution;
 
-    if (ioctl(fd_.Fd(), UI_ABS_SETUP, &abs_setup) < 0) {
+    if (VarTempIOCTL(fd_.Fd(), UI_ABS_SETUP, &abs_setup) < 0) {
       return absl::ErrnoToStatus(errno, "Failed to setup absolute axis");
     }
   }
 
   // Setup evdev:
   uinput_setup usetup{};
-  strncpy(usetup.name, name_.c_str(), sizeof(usetup.name) - 1);
+  strncpy(&usetup.name[0], name_.c_str(), sizeof(usetup.name) - 1);
   usetup.id.vendor = info_.vendor;
   usetup.id.product = info_.product;
   usetup.id.version = info_.version;
   usetup.id.bustype = info_.bustype;
   usetup.ff_effects_max = max_effects;
 
-  if (ioctl(fd_.Fd(), UI_DEV_SETUP, &usetup) < 0) {
+  if (VarTempIOCTL(fd_.Fd(), UI_DEV_SETUP, &usetup) < 0) {
     return absl::ErrnoToStatus(errno, "Failed to setup user device info");
   }
 // Fallback setup function (Linux <= 4.5 and FreeBSD).
 #else
   uinput_user_dev uidev{};
-  strncpy(uidev.name, name_.c_str(), sizeof(uidev.name) - 1);
+  strncpy(&uidev.name[0], name_.c_str(), sizeof(uidev.name) - 1);
   uidev.id.vendor = info_.vendor;
   uidev.id.product = info_.product;
   uidev.id.version = info_.version;
@@ -243,7 +246,7 @@ absl::StatusOr<UserInputDevice> UserInputDevice::Create(
     const CreateOptions& options) {
   // Verify that an uinput device exists and is readable and writable
   // by the current process.
-  if (!is_device(options.devnode)) {
+  if (!IsDevice(options.devnode)) {
     return absl::InvalidArgumentError(fmt::format(
         "User input device '{}' is not a writable character device file.",
         options.devnode));
@@ -266,7 +269,7 @@ absl::StatusOr<UserInputDevice> UserInputDevice::Create(
   result.devnode_ = options.devnode;
 
   // Set phys name
-  if (ioctl(fd, UI_SET_PHYS, options.phys.c_str()) < 0) {
+  if (VarTempIOCTL(fd, UI_SET_PHYS, options.phys.c_str()) < 0) {
     return absl::ErrnoToStatus(
         errno, "Setting user input device physical path failed");
   }
@@ -274,7 +277,7 @@ absl::StatusOr<UserInputDevice> UserInputDevice::Create(
 
   // Set properties
   for (const auto& prop : options.input_props) {
-    if (ioctl(fd, UI_SET_PROPBIT, prop.code) < 0) {
+    if (VarTempIOCTL(fd, UI_SET_PROPBIT, prop.code) < 0) {
       return absl::ErrnoToStatus(errno,
                                  "Setting user input device property failed");
     }
@@ -319,7 +322,7 @@ absl::StatusOr<UserInputDevice> UserInputDevice::Create(
   }
 
   // Create the uinput device.
-  if (ioctl(fd, UI_DEV_CREATE) < 0) {
+  if (VarTempIOCTL(fd, UI_DEV_CREATE) < 0) {
     return absl::ErrnoToStatus(errno, "Failed to create user input device");
   }
 
@@ -392,7 +395,7 @@ absl::StatusOr<UserInputDevice> UserInputDevice::CreateFromDevices(
 }
 
 absl::Status UserInputDevice::Close() {
-  if (ioctl(fd_.Fd(), UI_DEV_DESTROY) < 0) {
+  if (VarTempIOCTL(fd_.Fd(), UI_DEV_DESTROY) < 0) {
     int oerrno = errno;
     fd_.Close();
     return absl::ErrnoToStatus(oerrno, "Failed to close user input device");
@@ -405,7 +408,7 @@ absl::StatusOr<UInputUpload> UserInputDevice::BeginUpload(
     std::uint32_t request_id) const {
   uinput_ff_upload upload{};
   upload.request_id = request_id;
-  if (ioctl(fd_.Fd(), UI_BEGIN_FF_UPLOAD, &upload) < 0) {
+  if (VarTempIOCTL(fd_.Fd(), UI_BEGIN_FF_UPLOAD, &upload) < 0) {
     return absl::ErrnoToStatus(errno, "Failed to begin uinput upload.");
   }
   UInputUpload result{};
@@ -422,7 +425,7 @@ absl::Status UserInputDevice::EndUpload(const UInputUpload& upload) const {
   to_upload.retval = upload.retval;
   upload.effect.ToData(&to_upload.effect);
   upload.old.ToData(&to_upload.old);
-  if (ioctl(fd_.Fd(), UI_END_FF_UPLOAD, &to_upload) < 0) {
+  if (VarTempIOCTL(fd_.Fd(), UI_END_FF_UPLOAD, &to_upload) < 0) {
     return absl::ErrnoToStatus(errno, "Failed to end uinput upload.");
   }
   return absl::OkStatus();
@@ -432,7 +435,7 @@ absl::StatusOr<UInputErase> UserInputDevice::BeginErase(
     std::uint32_t effect_id) const {
   uinput_ff_erase erase{};
   erase.effect_id = effect_id;
-  if (ioctl(fd_.Fd(), UI_BEGIN_FF_ERASE, &erase) < 0) {
+  if (VarTempIOCTL(fd_.Fd(), UI_BEGIN_FF_ERASE, &erase) < 0) {
     return absl::ErrnoToStatus(errno, "Failed to begin uinput erase.");
   }
   UInputErase result{};
@@ -447,7 +450,7 @@ absl::Status UserInputDevice::EndErase(const UInputErase& erase) const {
   to_erase.request_id = erase.request_id;
   to_erase.retval = erase.retval;
   to_erase.effect_id = erase.effect_id;
-  if (ioctl(fd_.Fd(), UI_BEGIN_FF_ERASE, &to_erase) < 0) {
+  if (VarTempIOCTL(fd_.Fd(), UI_BEGIN_FF_ERASE, &to_erase) < 0) {
     return absl::ErrnoToStatus(errno, "Failed to end uinput erase.");
   }
   return absl::OkStatus();

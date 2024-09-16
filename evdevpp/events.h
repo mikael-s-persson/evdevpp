@@ -50,16 +50,22 @@ struct InputEvent {
         value(init_value) {}
   InputEvent(const InputEvent&) = default;
   InputEvent& operator=(const InputEvent&) = default;
+  InputEvent(InputEvent&&) = default;
+  InputEvent& operator=(InputEvent&&) = default;
   virtual ~InputEvent() = default;
 
-  virtual const char* TypeAsString() const { return type.ToString(); }
-  virtual bool IsInCategory() const { return false; };
-  virtual const char* CodeAsString() const { return "UNCATEGORIZED"; }
+  [[nodiscard]] virtual const char* TypeAsString() const {
+    return type.ToString();
+  }
+  [[nodiscard]] virtual bool IsInCategory() const { return false; };
+  [[nodiscard]] virtual const char* CodeAsString() const {
+    return "UNCATEGORIZED";
+  }
 
   static constexpr std::uint16_t kUncategorizedCode =
       std::numeric_limits<std::uint16_t>::max();
   // Internal use.
-  virtual void CloneInplace(InputEvent* ptr) const {
+  virtual void CloneInplace(InputEvent* ptr) const noexcept {
     new (ptr) InputEvent(*this);
   }
 };
@@ -98,12 +104,16 @@ struct KeyEvent : InputEvent {
     }
   }
 
-  bool IsKey() const { return (key != kUncategorizedCode); }
-  bool IsButton() const { return (button != kUncategorizedCode); }
-  bool IsInCategory() const override { return IsKey() || IsButton(); }
+  [[nodiscard]] bool IsKey() const { return (key != kUncategorizedCode); }
+  [[nodiscard]] bool IsButton() const { return (button != kUncategorizedCode); }
+  [[nodiscard]] bool IsInCategory() const override {
+    return IsKey() || IsButton();
+  }
 
-  const char* TypeAsString() const override { return Key::kClassName; }
-  const char* CodeAsString() const override {
+  [[nodiscard]] const char* TypeAsString() const override {
+    return Key::kClassName;
+  }
+  [[nodiscard]] const char* CodeAsString() const override {
     if (IsKey()) {
       return key.ToString();
     }
@@ -114,7 +124,7 @@ struct KeyEvent : InputEvent {
   }
   // For internal use.
   using ExpectedECodeType = Key;
-  void CloneInplace(InputEvent* ptr) const override {
+  void CloneInplace(InputEvent* ptr) const noexcept override {
     new (ptr) KeyEvent(*this);
   }
 };
@@ -132,15 +142,19 @@ struct CategorizedEvent : InputEvent {
     }
   }
 
-  bool IsInCategory() const override {
+  [[nodiscard]] bool IsInCategory() const override {
     return (categorized != kUncategorizedCode);
   }
 
-  const char* TypeAsString() const override { return ECodeType::kClassName; }
-  const char* CodeAsString() const override { return categorized.ToString(); }
+  [[nodiscard]] const char* TypeAsString() const override {
+    return ECodeType::kClassName;
+  }
+  [[nodiscard]] const char* CodeAsString() const override {
+    return categorized.ToString();
+  }
   // For internal use.
   using ExpectedECodeType = ECodeType;
-  void CloneInplace(InputEvent* ptr) const override {
+  void CloneInplace(InputEvent* ptr) const noexcept override {
     new (ptr) CategorizedEvent<ECodeType>(*this);
   }
 };
@@ -170,31 +184,43 @@ using AutorepeatEvent = CategorizedEvent<Autorepeat>;
 // A sound event (e.g., click).
 using SoundEvent = CategorizedEvent<Sound>;
 
+// A force feedback event (e.g., playing status).
+using ForceFeedbackEvent = CategorizedEvent<ForceFeedback>;
+
+// A user-input force feedback event (e.g., upload effect).
+using UIForceFeedbackEvent = CategorizedEvent<UIForceFeedback>;
+
 class AnyInputEvent {
  public:
   explicit AnyInputEvent(const InputEvent& rhs) : data_{.base = rhs} {
-    data_.base.~InputEvent();
-    rhs.CloneInplace(&data_.base);
+    Base().~InputEvent();
+    rhs.CloneInplace(&Base());
   }
   AnyInputEvent() : AnyInputEvent(InputEvent{}) {}
-  AnyInputEvent(const AnyInputEvent& rhs) : AnyInputEvent(rhs.data_.base) {}
-
-  AnyInputEvent& operator=(const AnyInputEvent& rhs) {
-    data_.base.~InputEvent();
-    rhs.data_.base.CloneInplace(&data_.base);
+  AnyInputEvent(const AnyInputEvent& rhs) : AnyInputEvent(rhs.Base()) {}
+  AnyInputEvent& operator=(const AnyInputEvent& rhs) noexcept {
+    if (this == &rhs) {
+      return *this;
+    }
+    Base().~InputEvent();
+    rhs.Base().CloneInplace(&Base());
     return *this;
   }
+  AnyInputEvent(AnyInputEvent&& rhs) noexcept : AnyInputEvent(rhs.Base()) {}
+  AnyInputEvent& operator=(AnyInputEvent&& rhs) noexcept {
+    return *this = static_cast<const AnyInputEvent&>(rhs);
+  }
+  ~AnyInputEvent() = default;
 
-  operator InputEvent&() { return data_.base; }
-  operator const InputEvent&() const { return data_.base; }
-
-  InputEvent& base() { return data_.base; }
-  const InputEvent& base() const { return data_.base; }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
+  [[nodiscard]] InputEvent& Base() { return data_.base; }
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
+  [[nodiscard]] const InputEvent& Base() const { return data_.base; }
 
   // Categorize an event according to its type.
   //
-  // If the event cannot be categorized, it is left uncategorized.
-  static AnyInputEvent Categorize(InputEvent uncategorized_ev);
+  // If the event cannot be categorized, it is copied uncategorized.
+  static AnyInputEvent Categorize(const InputEvent& uncategorized_ev);
 
  private:
   union InputEventUnion {
@@ -208,16 +234,29 @@ class AnyInputEvent {
     LEDEvent led_event;
     AutorepeatEvent autorepeat_event;
     SoundEvent sound_event;
+    ForceFeedbackEvent ff_event;
+    UIForceFeedbackEvent ui_ff_event;
+
+    InputEventUnion(const InputEventUnion&) = delete;
+    InputEventUnion(InputEventUnion&&) = delete;
+    InputEventUnion& operator=(const InputEventUnion&) = delete;
+    InputEventUnion& operator=(InputEventUnion&&) = delete;
 
     ~InputEventUnion() { base.~InputEvent(); }
   } data_;
 };
 
+// Just a wrapper to make a formattable type out of a absl::Time timestamp.
+struct InputEventTimestampFormatWrapper {
+  const absl::Time* timestamp;
+};
+
 }  // namespace evdevpp
 
 template <>
-class fmt::formatter<absl::Time> {
+class fmt::formatter<evdevpp::InputEventTimestampFormatWrapper> {
  public:
+  // NOLINTNEXTLINE(readability-identifier-naming) Following API.
   auto parse(format_parse_context& ctx) {
     const auto* begin = ctx.begin();
     const auto* end = ctx.end();
@@ -228,34 +267,25 @@ class fmt::formatter<absl::Time> {
     if (end_brace == end) {
       throw fmt::format_error("Invalid format - No matching brace");
     }
-    // TODO: This doesn't actually work in a useful way because fmt consumes %
-    // characters
-    //       There's a way to hijack the parser to keep all the tokens but I'm
-    //       being lazy
-    format_string_ = std::string(begin, end_brace);
     return end_brace;
   }
 
   template <typename FmtContext>
-  auto format(const absl::Time& t, FmtContext& ctx) const {
-    if (format_string_) {
-      return fmt::format_to(
-          ctx.out(), "{}",
-          absl::FormatTime(*format_string_, t, absl::UTCTimeZone()));
-    }
+  // NOLINTNEXTLINE(readability-identifier-naming) Following API.
+  auto format(const evdevpp::InputEventTimestampFormatWrapper& t,
+              FmtContext& ctx) const {
     // This implementation allows for printing without allocating memory.
-    std::tm t_tm = absl::ToTM(t, absl::UTCTimeZone());
+    std::tm t_tm = absl::ToTM(*t.timestamp, absl::UTCTimeZone());
     return fmt::format_to(
         ctx.out(), "{:%FT%T}.{:09d}Z", t_tm,
-        absl::ToInt64Nanoseconds(t - absl::FromTM(t_tm, absl::UTCTimeZone())));
+        absl::ToInt64Nanoseconds(*t.timestamp -
+                                 absl::FromTM(t_tm, absl::UTCTimeZone())));
   }
-
- private:
-  std::optional<std::string> format_string_ = std::nullopt;
 };
 
 template <>
 struct fmt::formatter<evdevpp::InputEvent> {
+  // NOLINTNEXTLINE(readability-identifier-naming) Following API.
   auto parse(format_parse_context& ctx) {
     const auto* begin = ctx.begin();
     const auto* end = ctx.end();
@@ -270,21 +300,25 @@ struct fmt::formatter<evdevpp::InputEvent> {
   }
 
   template <typename FmtContext>
+  // NOLINTNEXTLINE(readability-identifier-naming) Following API.
   auto format(const evdevpp::InputEvent& ev, FmtContext& ctx) const {
-    auto ctx_out = fmt::format_to(ctx.out(), "{} event at {}, ",
-                                  ev.TypeAsString(), ev.timestamp);
+    auto ctx_out = fmt::format_to(
+        ctx.out(), "{} event at {}, ", ev.TypeAsString(),
+        evdevpp::InputEventTimestampFormatWrapper{&ev.timestamp});
     ctx_out =
         fmt::format_to(ctx_out, "{} (0x{:04X}), ", ev.CodeAsString(), ev.code);
-    return fmt::format_to(ctx_out, "val {:12d}", ev.value);
+    return fmt::format_to(ctx_out, "value: {:12d}", ev.value);
   }
 };
 
 template <>
 struct fmt::formatter<evdevpp::KeyEvent> : fmt::formatter<evdevpp::InputEvent> {
   template <typename FmtContext>
+  // NOLINTNEXTLINE(readability-identifier-naming) Following API.
   auto format(const evdevpp::KeyEvent& ev, FmtContext& ctx) const {
-    auto ctx_out = fmt::format_to(ctx.out(), "{} event at {}, ",
-                                  ev.TypeAsString(), ev.timestamp);
+    auto ctx_out = fmt::format_to(
+        ctx.out(), "{} event at {}, ", ev.TypeAsString(),
+        evdevpp::InputEventTimestampFormatWrapper{&ev.timestamp});
     ctx_out =
         fmt::format_to(ctx_out, "{} (0x{:04X}), ", ev.CodeAsString(), ev.code);
     switch (ev.state) {
@@ -295,6 +329,16 @@ struct fmt::formatter<evdevpp::KeyEvent> : fmt::formatter<evdevpp::InputEvent> {
       case evdevpp::KeyEvent::State::kHold:
         return fmt::format_to(ctx_out, "{}", "hold");
     }
+  }
+};
+
+template <>
+struct fmt::formatter<evdevpp::AnyInputEvent>
+    : fmt::formatter<evdevpp::InputEvent> {
+  template <typename FmtContext>
+  // NOLINTNEXTLINE(readability-identifier-naming) Following API.
+  auto format(const evdevpp::AnyInputEvent& ev, FmtContext& ctx) const {
+    return fmt::formatter<evdevpp::InputEvent>::format(ev.Base(), ctx);
   }
 };
 

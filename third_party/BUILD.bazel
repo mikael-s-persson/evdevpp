@@ -1,4 +1,5 @@
 
 exports_files([
+    "hedron_compile_commands.patch",
     "libevdev.patch",
 ])
