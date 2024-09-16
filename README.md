@@ -52,7 +52,9 @@ Please report any issues at: https://github.com/mikael-s-persson/evdevpp/issues
 ### Documentation
 
 Some useful documentation can be found here:
+
 Linux kernel input subsystem docs: https://www.kernel.org/doc/html/v4.12/input/input_uapi.html
+
 Python-evdev library docs: https://python-evdev.readthedocs.io/en/latest/
 
 ### Development
