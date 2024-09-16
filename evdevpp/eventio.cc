@@ -11,7 +11,7 @@ absl::StatusOr<bool> EventIO::Wait(absl::Duration timeout) const {
   struct pollfd pfd = {.fd = fd_.Fd(), .events = POLLIN};
   int poll_res =
       ::poll(&pfd, 1,
-             std::min(1, static_cast<int>(absl::ToInt64Milliseconds(timeout))));
+             std::max(1, static_cast<int>(absl::ToInt64Milliseconds(timeout))));
   if (poll_res < 0) {
     return absl::ErrnoToStatus(errno, "Wait on input event failed");
   }

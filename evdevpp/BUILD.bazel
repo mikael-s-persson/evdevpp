@@ -16,6 +16,7 @@ cc_library(
         "info.h",
         "user_device.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         ":ecodes",
         "@libevdev",
@@ -53,7 +54,13 @@ genrule(
 
 cc_library(
     name = "ecodes",
+    srcs = [
+        ":ecodes_gen",
+    ],
     hdrs = [
         ":ecodes_gen",
+    ],
+    deps = [
+        "@com_google_absl//absl/container:flat_hash_map",
     ],
 )

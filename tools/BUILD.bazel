@@ -1,0 +1,16 @@
+
+cc_binary(
+    name = "dumpevents",
+    srcs = [
+        "dumpevents.cc",
+    ],
+    deps = [
+        "//evdevpp",
+        "@cli11",
+        "@fmt",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@toolbelt//toolbelt",
+    ],
+)

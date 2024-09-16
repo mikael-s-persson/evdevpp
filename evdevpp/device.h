@@ -74,6 +74,7 @@ class InputDevice : public EventIO {
   [[nodiscard]] const DeviceInfo& Info() const { return info_; }
   [[nodiscard]] const std::string& DevPath() const { return path_; }
   [[nodiscard]] const std::string& Name() const { return name_; }
+  [[nodiscard]] int Version() const { return version_; }
   [[nodiscard]] const std::string& Phys() const { return phys_; }
   [[nodiscard]] const std::string& Uniq() const { return uniq_; }
   [[nodiscard]] const CapabilitiesInfo& Capabilities() const {

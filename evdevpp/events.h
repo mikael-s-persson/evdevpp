@@ -9,6 +9,7 @@
 
 #include "absl/time/time.h"
 #include "evdevpp/ecodes.h"
+#include "fmt/chrono.h"
 #include "fmt/format.h"
 
 namespace evdevpp {
@@ -303,10 +304,10 @@ struct fmt::formatter<evdevpp::InputEvent> {
   // NOLINTNEXTLINE(readability-identifier-naming) Following API.
   auto format(const evdevpp::InputEvent& ev, FmtContext& ctx) const {
     auto ctx_out = fmt::format_to(
-        ctx.out(), "{} event at {}, ", ev.TypeAsString(),
+        ctx.out(), "{:<14s} event at {}, ", ev.TypeAsString(),
         evdevpp::InputEventTimestampFormatWrapper{&ev.timestamp});
-    ctx_out =
-        fmt::format_to(ctx_out, "{} (0x{:04X}), ", ev.CodeAsString(), ev.code);
+    ctx_out = fmt::format_to(ctx_out, "{:<20s} (0x{:04X}), ", ev.CodeAsString(),
+                             ev.code);
     return fmt::format_to(ctx_out, "value: {:12d}", ev.value);
   }
 };

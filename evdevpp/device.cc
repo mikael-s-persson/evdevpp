@@ -305,7 +305,7 @@ absl::StatusOr<std::int16_t> InputDevice::UploadEffect(
     const AnyEffect& new_effect) const {
   ff_effect effect{};
   new_effect.Base().ToData(static_cast<void*>(&effect));
-  effect.id = 0;
+  effect.id = -1;
   if (VarTempIOCTL(fd_.Fd(), EVIOCSFF, &effect) != 0) {
     return absl::ErrnoToStatus(errno, "Input device uploading effect failed");
   }
