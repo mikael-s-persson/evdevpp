@@ -1,0 +1,12 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+index 875b28f..4773778 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -67,6 +67,7 @@ cc_library(
+         ],
+         "//conditions:default": [],
+     }),
++    visibility = ["//visibility:public"],
+ ) for stem_name in ["input", "input-event-codes", "uinput",]]
+ 
+ cc_library(

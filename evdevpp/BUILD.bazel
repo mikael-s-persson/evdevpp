@@ -1,0 +1,61 @@
+load("@rules_python//python:defs.bzl", "py_binary")
+
+cc_library(
+    name = "evdevpp",
+    srcs = [
+        "device.cc",
+        "eventio.cc",
+        "events.cc",
+        "info.cc",
+        "util.cc",
+        "user_device.cc",
+    ],
+    hdrs = [
+        "device.h",
+        "eventio.h",
+        "events.h",
+        "info.h",
+        "user_device.h",
+        "util.h",
+    ],
+    deps = [
+        ":ecodes",
+        "@libevdev",
+        "@fmt",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/time",
+        "@toolbelt//toolbelt",
+    ],
+)
+
+py_binary(
+    name = "genecodes",
+    srcs = [
+        "genecodes.py",
+    ],
+)
+
+genrule(
+    name = "ecodes_gen",
+    srcs = [
+        "@libevdev//:os-input",
+        "@libevdev//:os-input-event-codes",
+        "@libevdev//:os-uinput",
+    ],
+    outs = [
+        "ecodes.h",
+        "ecodes.cc",
+    ],
+    cmd = "$(location :genecodes) $(location @libevdev//:os-input) $(location @libevdev//:os-input-event-codes) $(location @libevdev//:os-uinput) $(location ecodes.h) $(location ecodes.cc)",
+    tools = [":genecodes"],
+)
+
+cc_library(
+    name = "ecodes",
+    hdrs = [
+        ":ecodes_gen",
+    ],
+)
