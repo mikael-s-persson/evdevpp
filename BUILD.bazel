@@ -1,0 +1,6 @@
+# This is the public target to depend on.
+alias(
+    name="evdevpp",
+    actual="//evdevpp",
+    visibility = ["//visibility:public"],
+)
