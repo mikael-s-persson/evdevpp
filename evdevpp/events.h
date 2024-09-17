@@ -1,6 +1,7 @@
 #ifndef EVDEVPP_EVDEVPP_EVENTS_H_
 #define EVDEVPP_EVDEVPP_EVENTS_H_
 
+#include <cassert>
 #include <cstdint>
 #include <limits>
 #include <new>
@@ -191,6 +192,35 @@ using ForceFeedbackEvent = CategorizedEvent<ForceFeedback>;
 // A user-input force feedback event (e.g., upload effect).
 using UIForceFeedbackEvent = CategorizedEvent<UIForceFeedback>;
 
+template <typename ActualEvent>
+EventType ExpectedEventType() {
+  if constexpr (std::is_same_v<ActualEvent, KeyEvent>) {
+    return EventType::kKey;
+  } else if constexpr (std::is_same_v<ActualEvent, SynchEvent>) {
+    return EventType::kSyn;
+  } else if constexpr (std::is_same_v<ActualEvent, RelEvent>) {
+    return EventType::kRel;
+  } else if constexpr (std::is_same_v<ActualEvent, AbsEvent>) {
+    return EventType::kAbs;
+  } else if constexpr (std::is_same_v<ActualEvent, MiscEvent>) {
+    return EventType::kMsc;
+  } else if constexpr (std::is_same_v<ActualEvent, SwitchEvent>) {
+    return EventType::kSw;
+  } else if constexpr (std::is_same_v<ActualEvent, LEDEvent>) {
+    return EventType::kLed;
+  } else if constexpr (std::is_same_v<ActualEvent, SoundEvent>) {
+    return EventType::kSnd;
+  } else if constexpr (std::is_same_v<ActualEvent, AutorepeatEvent>) {
+    return EventType::kRep;
+  } else if constexpr (std::is_same_v<ActualEvent, ForceFeedbackEvent>) {
+    return EventType::kFfStatus;
+  } else if constexpr (std::is_same_v<ActualEvent, UIForceFeedbackEvent>) {
+    return EventType::kUinput;
+  } else {
+    return EventType::kMax;
+  }
+};
+
 class AnyInputEvent {
  public:
   explicit AnyInputEvent(const InputEvent& rhs) : data_{.base = rhs} {
@@ -218,10 +248,26 @@ class AnyInputEvent {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
   [[nodiscard]] const InputEvent& Base() const { return data_.base; }
 
+  // Casting functions to get the derived-class event.
+  template <typename ActualEvent>
+  [[nodiscard]] ActualEvent& As() {
+    assert(ExpectedEventType<ActualEvent>() == Base().type);
+    assert(Base().IsInCategory());
+    return static_cast<ActualEvent&>(Base());
+  }
+  template <typename ActualEvent>
+  [[nodiscard]] const ActualEvent& As() const {
+    assert(ExpectedEventType<ActualEvent>() == Base().type);
+    assert(Base().IsInCategory());
+    return static_cast<const ActualEvent&>(Base());
+  }
+
   // Categorize an event according to its type.
   //
   // If the event cannot be categorized, it is copied uncategorized.
   static AnyInputEvent Categorize(const InputEvent& uncategorized_ev);
+
+  void Categorize() { *this = Categorize(Base()); }
 
  private:
   union InputEventUnion {

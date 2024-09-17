@@ -4,6 +4,7 @@
 #include "absl/status/status.h"
 #include "evdevpp/device.h"
 #include "evdevpp/ecodes.h"
+#include "evdevpp/events.h"
 #include "evdevpp/info.h"
 #include "fmt/core.h"
 

@@ -2,6 +2,7 @@
 #define EVDEVPP_EVDEVPP_INFO_H_
 
 #include <array>
+#include <cassert>
 #include <cstdint>
 #include <new>
 
@@ -9,6 +10,7 @@
 #include "absl/container/flat_hash_set.h"
 #include "absl/time/time.h"
 #include "evdevpp/ecodes.h"
+#include "fmt/format.h"
 
 namespace evdevpp {
 
@@ -173,9 +175,10 @@ struct ConstantEffect : Effect {
   std::int16_t level = 0;
   Envelope envelope{};
 
-  [[nodiscard]] ForceFeedback Type() const override {
+  [[nodiscard]] static ForceFeedback StaticType() {
     return ForceFeedback::kConstant;
   }
+  [[nodiscard]] ForceFeedback Type() const override { return StaticType(); }
   void ToData(void* data_ptr) const override;
   void FromData(const void* data_ptr) override;
   // Internal use.
@@ -202,9 +205,10 @@ struct RampEffect : Effect {
   std::int16_t end_level = 0;
   Envelope envelope{};
 
-  [[nodiscard]] ForceFeedback Type() const override {
+  [[nodiscard]] static ForceFeedback StaticType() {
     return ForceFeedback::kRamp;
   }
+  [[nodiscard]] ForceFeedback Type() const override { return StaticType(); }
   void ToData(void* data_ptr) const override;
   void FromData(const void* data_ptr) override;
   // Internal use.
@@ -240,27 +244,30 @@ struct ConditionEffect : Effect {
 };
 
 struct SpringEffect : ConditionEffect {
-  [[nodiscard]] ForceFeedback Type() const override {
+  [[nodiscard]] static ForceFeedback StaticType() {
     return ForceFeedback::kSpring;
   }
+  [[nodiscard]] ForceFeedback Type() const override { return StaticType(); }
   // Internal use.
   void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) SpringEffect(*this);
   }
 };
 struct DamperEffect : ConditionEffect {
-  [[nodiscard]] ForceFeedback Type() const override {
+  [[nodiscard]] static ForceFeedback StaticType() {
     return ForceFeedback::kDamper;
   }
+  [[nodiscard]] ForceFeedback Type() const override { return StaticType(); }
   // Internal use.
   void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) DamperEffect(*this);
   }
 };
 struct FrictionEffect : ConditionEffect {
-  [[nodiscard]] ForceFeedback Type() const override {
+  [[nodiscard]] static ForceFeedback StaticType() {
     return ForceFeedback::kFriction;
   }
+  [[nodiscard]] ForceFeedback Type() const override { return StaticType(); }
   // Internal use.
   void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) FrictionEffect(*this);
@@ -287,9 +294,10 @@ struct PeriodicEffect : Effect {
   std::uint32_t custom_len = 0;
   std::int16_t* custom_data = nullptr;
 
-  [[nodiscard]] ForceFeedback Type() const override {
+  [[nodiscard]] static ForceFeedback StaticType() {
     return ForceFeedback::kPeriodic;
   }
+  [[nodiscard]] ForceFeedback Type() const override { return StaticType(); }
   void ToData(void* data_ptr) const override;
   void FromData(const void* data_ptr) override;
   // Internal use.
@@ -298,9 +306,10 @@ struct PeriodicEffect : Effect {
   }
 };
 struct CustomEffect : PeriodicEffect {
-  [[nodiscard]] ForceFeedback Type() const override {
+  [[nodiscard]] static ForceFeedback StaticType() {
     return ForceFeedback::kCustom;
   }
+  [[nodiscard]] ForceFeedback Type() const override { return StaticType(); }
   // Internal use.
   void CloneInplace(Effect* ptr) const noexcept override {
     new (ptr) CustomEffect(*this);
@@ -317,9 +326,10 @@ struct RumbleEffect : Effect {
   std::uint16_t strong_magnitude = 0;
   std::uint16_t weak_magnitude = 0;
 
-  [[nodiscard]] ForceFeedback Type() const override {
+  [[nodiscard]] static ForceFeedback StaticType() {
     return ForceFeedback::kRumble;
   }
+  [[nodiscard]] ForceFeedback Type() const override { return StaticType(); }
   void ToData(void* data_ptr) const override;
   void FromData(const void* data_ptr) override;
   // Internal use.
@@ -355,6 +365,18 @@ class AnyEffect {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access)
   [[nodiscard]] const Effect& Base() const { return data_.base; }
 
+  // Casting functions to get the derived-class effect.
+  template <typename ActualEffect>
+  [[nodiscard]] ActualEffect& As() {
+    assert(ActualEffect::StaticType() == Base().Type());
+    return static_cast<ActualEffect&>(Base());
+  }
+  template <typename ActualEffect>
+  [[nodiscard]] const ActualEffect& As() const {
+    assert(ActualEffect::StaticType() == Base().Type());
+    return static_cast<const ActualEffect&>(Base());
+  }
+
   void ToData(void* data_ptr) const { Base().ToData(data_ptr); }
   static AnyEffect FromData(const void* data_ptr);
 
@@ -377,19 +399,6 @@ class AnyEffect {
 
     ~EffectUnion() { base.~Effect(); }
   } data_;
-};
-
-struct UInputUpload {
-  std::uint32_t request_id = 0;
-  std::int32_t retval = 0;
-  AnyEffect effect{};
-  AnyEffect old{};
-};
-
-struct UInputErase {
-  std::uint32_t request_id = 0;
-  std::int32_t retval = 0;
-  std::uint32_t effect_id = 0;
 };
 
 }  // namespace evdevpp

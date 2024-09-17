@@ -14,6 +14,19 @@
 
 namespace evdevpp {
 
+struct UInputUpload {
+  std::uint32_t request_id = 0;
+  std::int32_t retval = 0;
+  AnyEffect effect{};
+  AnyEffect old{};
+};
+
+struct UInputErase {
+  std::uint32_t request_id = 0;
+  std::int32_t retval = 0;
+  std::uint32_t effect_id = 0;
+};
+
 // A userland input device and that can inject input events into the
 // linux input subsystem.
 class UserInputDevice : public EventIO {
