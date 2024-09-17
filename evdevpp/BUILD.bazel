@@ -1,4 +1,5 @@
 load("@rules_python//python:defs.bzl", "py_binary")
+load(":defs.bzl", "cc_dump_defines")
 
 cc_library(
     name = "evdevpp",
@@ -37,18 +38,25 @@ py_binary(
     ],
 )
 
+cc_dump_defines(
+    name = "libevdev_defines",
+    included_hdrs = [
+        "linux/input.h",
+        "linux/uinput.h",
+    ],
+    deps = ["@libevdev"],
+)
+
 genrule(
     name = "ecodes_gen",
     srcs = [
-        "@libevdev//:os-input",
-        "@libevdev//:os-input-event-codes",
-        "@libevdev//:os-uinput",
+        ":libevdev_defines",
     ],
     outs = [
         "ecodes.h",
         "ecodes.cc",
     ],
-    cmd = "$(location :genecodes) $(location @libevdev//:os-input) $(location @libevdev//:os-input-event-codes) $(location @libevdev//:os-uinput) $(location ecodes.h) $(location ecodes.cc)",
+    cmd = "$(location :genecodes) $(locations :libevdev_defines) $(location ecodes.h) $(location ecodes.cc)",
     tools = [":genecodes"],
 )
 

@@ -8,11 +8,6 @@ bazel_dep(name = "platforms", version = "0.0.10")
 bazel_dep(name = "rules_python", version = "0.33.2")
 
 bazel_dep(name = "libevdev", version = "1.13.2")
-single_version_override(
-    module_name = "libevdev",
-    patches = ["//third_party:libevdev.patch"],
-    patch_strip = 1,
-)
 
 # FMT library
 bazel_dep(name = "fmt", version = "10.1.1")

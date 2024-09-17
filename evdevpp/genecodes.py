@@ -29,7 +29,7 @@ struct %s {
   constexpr operator std::uint16_t() const { return code; }
 %s
   static const absl::flat_hash_map<std::uint16_t, const char*>& CodeToString();
-  const char* ToString() const {
+  [[nodiscard]] const char* ToString() const {
     const auto& m = CodeToString();
     auto it = m.find(code);
     if (it == m.end()) {
@@ -125,6 +125,8 @@ def to_camel_case_constant(upper_snake):
     return result
 
 
+seen_cls_mem_pairs = {}
+
 def parse_header(header):
     for line in open(header):
         macro = macro_regex.search(line)
@@ -134,17 +136,23 @@ def parse_header(header):
         if macro and macro.group(1) in all_classes:
             cls_name = all_classes[macro.group(1)][0]
             mem_name = to_camel_case_constant(macro.group(2))
+            if (cls_name, mem_name) in seen_cls_mem_pairs:
+                continue
             all_classes[macro.group(1)][1].append("  static const %s %s;" % (cls_name, mem_name))
             all_classes[macro.group(1)][2].append("const %s %s::%s = %s;" % (cls_name, cls_name, mem_name, macro.group(3)))
             all_classes[macro.group(1)][3].append(r"""    result[%s] = "%s::%s";""" % (mem_name, cls_name, mem_name))
+            seen_cls_mem_pairs[(cls_name, mem_name)] = True
             continue
         macro_alias = macro_alias_regex.search(line)
         if macro_alias and macro_alias.group(1) in all_classes and macro_alias.group(3) == macro_alias.group(1):
             cls_name = all_classes[macro_alias.group(1)][0]
             mem_name = to_camel_case_constant(macro_alias.group(2))
             val_name = to_camel_case_constant(macro_alias.group(4))
+            if (cls_name, mem_name) in seen_cls_mem_pairs:
+                continue
             all_classes[macro_alias.group(1)][1].append("  static const %s %s;" % (cls_name, mem_name))
             all_classes[macro_alias.group(1)][2].append("const %s %s::%s = %s::%s;" % (cls_name, cls_name, mem_name, cls_name, val_name))
+            seen_cls_mem_pairs[(cls_name, mem_name)] = True
 
 
 for header in headers:
