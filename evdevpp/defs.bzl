@@ -2,7 +2,7 @@
 This file defines a custom rule to dump all the preprocessor defines brought in by the headers of a dependency.
 """
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
-load("@rules_cc//cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
+load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
 
 def _impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)
