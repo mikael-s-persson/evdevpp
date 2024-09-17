@@ -29,12 +29,11 @@ Configurations available include `--config=clang` (for Clang) and `--config=libc
 To import this library into your own Bazel project, put the following in your MODULE.bazel:
 
 ```
-# Load git_repository rule if not loaded already
-git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
-git_repository(
-    name = "evdevpp",
-    branch = "main",
+bazel_dep(name = "evdevpp")
+git_override(
+    module_name = "evdevpp",
+    # Update to desired or latest commit.
+    commit = "c32b33ec85d8ad080a1ee756ef2784ae3d06dbfa",
     remote = "https://github.com/mikael-s-persson/evdevpp.git",
 )
 
