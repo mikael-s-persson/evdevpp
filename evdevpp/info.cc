@@ -1,5 +1,7 @@
 #include "evdevpp/info.h"
 
+#include <type_traits>
+
 #include "linux/input.h"
 
 namespace evdevpp {
@@ -24,6 +26,18 @@ Envelope FromEnvelope(const ff_envelope& envelope) {
           .fade_level = envelope.fade_level};
 }
 
+template <typename Cont>
+bool ContainsAll(const Cont& superset, const Cont& subset) {
+  return std::all_of(
+      subset.begin(), subset.end(), [&superset](const auto& elem) {
+        if constexpr (std::is_convertible_v<decltype(elem), std::uint16_t>) {
+          return superset.contains(elem);
+        } else {
+          return superset.contains(elem.first);
+        }
+      });
+}
+
 }  // namespace
 
 CapabilitiesInfo CapabilitiesInfo::AllKeys() {
@@ -38,6 +52,20 @@ CapabilitiesInfo CapabilitiesInfo::AllKeys() {
     result.keys.insert(code);
   }
   return result;
+}
+
+bool CapabilitiesInfo::HasCapabilities(const CapabilitiesInfo& min_caps) const {
+  return ContainsAll(keys, min_caps.keys) &&
+         ContainsAll(synchs, min_caps.synchs) &&
+         ContainsAll(relative_axes, min_caps.relative_axes) &&
+         ContainsAll(absolute_axes, min_caps.absolute_axes) &&
+         ContainsAll(miscs, min_caps.miscs) &&
+         ContainsAll(switches, min_caps.switches) &&
+         ContainsAll(leds, min_caps.leds) &&
+         ContainsAll(sounds, min_caps.sounds) &&
+         ContainsAll(autorepeats, min_caps.autorepeats) &&
+         ContainsAll(force_feedbacks, min_caps.force_feedbacks) &&
+         ContainsAll(uinputs, min_caps.uinputs);
 }
 
 void Effect::ToData(void* data_ptr) const {

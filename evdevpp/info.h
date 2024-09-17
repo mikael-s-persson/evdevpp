@@ -62,6 +62,8 @@ struct CapabilitiesInfo {
   absl::flat_hash_set<std::uint16_t> uinputs;                 // UIForceFeedback
 
   static CapabilitiesInfo AllKeys();
+
+  [[nodiscard]] bool HasCapabilities(const CapabilitiesInfo& min_caps) const;
 };
 
 // Keyboard repeat rate.
