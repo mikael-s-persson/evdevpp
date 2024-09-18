@@ -41,6 +41,9 @@ bool IsBitSet(const std::array<std::uint8_t, N>& bitmask, int bit) {
 // List readable character devices in `input_device_dir`.
 std::vector<std::string> ListDevices(std::string_view input_device_dir) {
   std::vector<std::string> result;
+  if (!std::filesystem::exists(input_device_dir)) {
+    return result;  // NRVO
+  }
   for (const auto& dev_filename :
        std::filesystem::directory_iterator(input_device_dir)) {
     if (std::string_view{dev_filename.path().filename().native()}.substr(
