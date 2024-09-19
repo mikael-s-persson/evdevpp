@@ -109,6 +109,9 @@ class InputDevice : public EventIO {
   // stops the effect.
   absl::Status EraseEffect(int id) const;
 
+  // Erase all force effects on the device. This also stops all effects.
+  void ClearEffects() const;
+
  private:
   std::string path_;
   DeviceInfo info_{};

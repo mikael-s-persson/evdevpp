@@ -332,4 +332,10 @@ absl::Status InputDevice::EraseEffect(int id) const {
   return absl::OkStatus();
 }
 
+void InputDevice::ClearEffects() const {
+  for (int i = 0; i < ff_effects_count_; ++i) {
+    (void)EraseEffect(i);
+  }
+}
+
 }  // namespace evdevpp
