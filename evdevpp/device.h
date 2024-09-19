@@ -97,9 +97,13 @@ class InputDevice : public EventIO {
     return Write(EventType::kLed, ev, value);
   }
 
-  // Upload a force feedback effect to a force feedback device.
-  [[nodiscard]] absl::StatusOr<std::int16_t> UploadEffect(
+  // Upload a new force feedback effect to a force feedback device.
+  [[nodiscard]] absl::StatusOr<std::int16_t> NewEffect(
       const AnyEffect& new_effect) const;
+
+  // Upload an updated force feedback effect to a force feedback device.
+  [[nodiscard]] absl::Status UpdateEffect(
+      const AnyEffect& updated_effect) const;
 
   // Erase a force effect from a force feedback device. This also
   // stops the effect.

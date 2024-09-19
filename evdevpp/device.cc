@@ -304,7 +304,7 @@ absl::StatusOr<absl::flat_hash_set<std::uint16_t>> InputDevice::LEDs() const {
   return result;
 }
 
-absl::StatusOr<std::int16_t> InputDevice::UploadEffect(
+absl::StatusOr<std::int16_t> InputDevice::NewEffect(
     const AnyEffect& new_effect) const {
   ff_effect effect{};
   new_effect.Base().ToData(static_cast<void*>(&effect));
@@ -313,6 +313,16 @@ absl::StatusOr<std::int16_t> InputDevice::UploadEffect(
     return absl::ErrnoToStatus(errno, "Input device uploading effect failed");
   }
   return effect.id;
+}
+
+absl::Status InputDevice::UpdateEffect(
+      const AnyEffect& updated_effect) const {
+  ff_effect effect{};
+  updated_effect.Base().ToData(static_cast<void*>(&effect));
+  if (VarTempIOCTL(fd_.Fd(), EVIOCSFF, &effect) != 0) {
+    return absl::ErrnoToStatus(errno, "Input device uploading effect failed");
+  }
+  return absl::OkStatus();
 }
 
 absl::Status InputDevice::EraseEffect(int id) const {

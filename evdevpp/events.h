@@ -83,19 +83,20 @@ struct KeyEvent : InputEvent {
   Key key = kUncategorizedCode;
   Button button = kUncategorizedCode;
 
-  template <typename... Args>
-  explicit KeyEvent(Args&&... args) : InputEvent(std::forward<Args>(args)...) {
-    switch (value) {
+  static State ToState(std::int32_t v) {
+    switch (v) {
       case 1:
-        state = State::kDown;
-        break;
+        return State::kDown;
       case 2:
-        state = State::kHold;
-        break;
+        return State::kHold;
       default:
-        state = State::kUp;
-        break;
+        return State::kUp;
     }
+  }
+
+  template <typename... Args>
+  explicit KeyEvent(Args&&... args)
+      : InputEvent(std::forward<Args>(args)...), state(ToState(value)) {
     const auto& keys = Key::CodeToString();
     if (keys.find(code) != keys.end()) {
       key = code;

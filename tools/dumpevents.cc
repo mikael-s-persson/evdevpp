@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
         eff.waveform = ForceFeedback::kSquare;
         eff.period = absl::Milliseconds(500);
         eff.magnitude = 30000;
-        auto eff_id_or = device.UploadEffect(AnyEffect{eff});
+        auto eff_id_or = device.NewEffect(AnyEffect{eff});
         if (!eff_id_or.ok()) {
           fmt::print(stderr, "Failed to upload rumble effect on device: {}\n",
                      eff_id_or.status().ToString());
