@@ -1,6 +1,7 @@
 
 #include "CLI/CLI.hpp"
 #include "absl/container/flat_hash_set.h"
+#include "absl/status/statusor.h"
 #include "absl/status/status.h"
 #include "evdevpp/device.h"
 #include "evdevpp/ecodes.h"
