@@ -25,9 +25,9 @@ int VarTempIOCTL(int fd, std::uint64_t req, Args&&... args) {
 
 bool IsDevice(const std::filesystem::file_status& f_stat) {
   return (f_stat.type() == std::filesystem::file_type::character &&
-          (f_stat.permissions() & std::filesystem::perms::others_read) !=
+          (f_stat.permissions() & std::filesystem::perms::group_read) !=
               std::filesystem::perms::none &&
-          (f_stat.permissions() & std::filesystem::perms::others_write) !=
+          (f_stat.permissions() & std::filesystem::perms::group_write) !=
               std::filesystem::perms::none);
 }
 
