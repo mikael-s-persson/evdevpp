@@ -161,20 +161,20 @@ absl::StatusOr<InputDevice> InputDevice::Open(const std::string& dev_path) {
                    result.name_.data()) < 0) {
     return absl::ErrnoToStatus(errno, "Input device name query failed");
   }
-  result.name_.erase(result.name_.find('\0') + 1);
+  result.name_.erase(result.name_.find('\0'));
 
   // Some devices do not have a physical topology associated with them
   result.phys_.resize(256, '\0');
   (void)VarTempIOCTL(result.fd_.Fd(), EVIOCGPHYS(result.phys_.size()),
                      result.phys_.data());
-  result.phys_.erase(result.phys_.find('\0') + 1);
+  result.phys_.erase(result.phys_.find('\0'));
 
   // Some kernels have started reporting bluetooth controller MACs as phys.
   // This lets us get the real physical address. As with phys, it may be blank.
   result.uniq_.resize(256, '\0');
   (void)VarTempIOCTL(result.fd_.Fd(), EVIOCGUNIQ(result.uniq_.size()),
                      result.uniq_.data());
-  result.uniq_.erase(result.uniq_.find('\0') + 1);
+  result.uniq_.erase(result.uniq_.find('\0'));
 
   if (VarTempIOCTL(result.fd_.Fd(), EVIOCGVERSION, &result.version_) < 0) {
     return absl::ErrnoToStatus(errno,
