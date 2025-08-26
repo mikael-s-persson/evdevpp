@@ -1,8 +1,13 @@
 """
 This file defines a custom rule to dump all the preprocessor defines brought in by the headers of a dependency.
 """
+load("@bazel_cc_meta//cc_meta:cc_meta.bzl", "cc_meta_aspect_factory")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load("@bazel_tools//tools/build_defs/cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
+
+evdevpp_cc_meta_aspect = cc_meta_aspect_factory(
+    deviations = [Label("//evdevpp:evdevpp_cc_meta_deviations")],
+)
 
 def _impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)

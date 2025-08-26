@@ -6,6 +6,7 @@ cc_binary(
     ],
     deps = [
         "//evdevpp",
+        "//evdevpp:ecodes",
         "@cli11",
         "@fmt",
         "@com_google_absl//absl/container:flat_hash_set",

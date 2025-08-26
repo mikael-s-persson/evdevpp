@@ -2,43 +2,43 @@ module(
     name = "evdevpp",
 )
 
-git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-bazel_dep(name = "platforms", version = "0.0.10")
-bazel_dep(name = "rules_python", version = "0.33.2")
+bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "rules_python", version = "0.40.0")
 
 bazel_dep(name = "libevdev", version = "1.13.2")
 
 # FMT library
-bazel_dep(name = "fmt", version = "10.1.1")
+bazel_dep(name = "fmt", version = "11.0.2")
 
 # CLI11 C++ CLI library
 bazel_dep(name = "cli11", version = "2.4.2")
 
-bazel_dep(name = "abseil-cpp", version = "20240722.0", repo_name = "com_google_absl")
+bazel_dep(name = "abseil-cpp", version = "20240722.0.bcr.1", repo_name = "com_google_absl")
 
 # Coroutines
-git_repository(
+http_archive(
     name = "coroutines",
-    commit = "9ff981d875c1b4846b11307c7c42be559000b864",
-    remote = "https://github.com/dallison/co.git",
+    integrity = "sha256-P4nLeTzHht8uk/Jzee5OGRVgRD4Dr8Ww61RBpl0mp1E=",
+    strip_prefix = "co-2.0.2",
+    urls = ["https://github.com/dallison/co/archive/refs/tags/2.0.2.tar.gz"],
 )
 
 # Toolbelt
-git_repository(
+http_archive(
     name = "toolbelt",
-    commit = "6c8631277e2c5a15eece2696695c8df6ceee4b86",
-    remote = "https://github.com/dallison/cpp_toolbelt.git",
+    integrity = "sha256-sMbIIW0Rin1J8oC4RB/83K68L0pHVaShv3l9fb3nczM=",
+    strip_prefix = "cpp_toolbelt-1.2.8",
+    urls = ["https://github.com/dallison/cpp_toolbelt/archive/refs/tags/1.2.8.tar.gz"],
 )
 
-# Hedron's Compile Commands Extractor for Bazel
-# https://github.com/hedronvision/bazel-compile-commands-extractor
-# bazel run --config=libc++ @hedron_compile_commands//:refresh_all -- --config=libc++
-bazel_dep(name = "hedron_compile_commands", dev_dependency = True)
+# Aspects to extract C++ metadata and fix dependency issues.
+# bazel run -c dbg //evdevpp:refresh_all -- -c dbg
+# bazel run -c dbg @bazel_cc_meta//cc_meta:fix_deps
+bazel_dep(name = "bazel_cc_meta", version = "0.0.0")
 git_override(
-    module_name = "hedron_compile_commands",
-    commit = "f5fbd4cee671d8d908f37c83abaf70fba5928fc7",
-    remote = "https://github.com/mikael-s-persson/bazel-compile-commands-extractor.git",
-    # Replace the commit hash (above) with the latest (https://github.com/hedronvision/bazel-compile-commands-extractor/commits/main).
-    # Even better, set up Renovate and let it do the work for you (see "Suggestion: Updates" in the README).
+    module_name = "bazel_cc_meta",
+    commit = "b023f96c0e543affa4a8771c6b48cd1d9f7da283",
+    remote = "https://github.com/mikael-s-persson/bazel_cc_meta.git",
 )

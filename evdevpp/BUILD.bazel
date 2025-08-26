@@ -1,5 +1,6 @@
 load("@rules_python//python:defs.bzl", "py_binary")
 load(":defs.bzl", "cc_dump_defines")
+load("@bazel_cc_meta//cc_meta:cc_meta.bzl", "make_cc_meta_deviations", "refresh_cc_meta")
 
 cc_library(
     name = "evdevpp",
@@ -68,7 +69,25 @@ cc_library(
     hdrs = [
         ":ecodes_gen",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_google_absl//absl/container:flat_hash_map",
     ],
+)
+
+make_cc_meta_deviations(
+    name = "evdevpp_cc_meta_deviations",
+    deviations = {
+        "@libevdev": {
+            "alwaysused": True,
+            "forward_exports": True,
+        },
+    },
+    visibility = ["//visibility:public"],
+)
+
+refresh_cc_meta(
+    name = "refresh_all",
+    cc_meta_aspect = "//evdevpp:defs.bzl%evdevpp_cc_meta_aspect",
+    visibility = ["//visibility:public"],
 )
