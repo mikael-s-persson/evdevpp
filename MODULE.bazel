@@ -5,7 +5,7 @@ module(
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 bazel_dep(name = "platforms", version = "1.0.0")
-bazel_dep(name = "rules_python", version = "0.40.0")
+bazel_dep(name = "rules_python", version = "1.7.0")
 
 bazel_dep(name = "libevdev", version = "1.13.2")
 
@@ -28,9 +28,9 @@ http_archive(
 # Toolbelt
 http_archive(
     name = "toolbelt",
-    integrity = "sha256-6H+zgo/8NGZEU43PLKMcoCglmISWD5xk2SOzMGKIbAY=",
-    strip_prefix = "cpp_toolbelt-1.4.1",
-    urls = ["https://github.com/dallison/cpp_toolbelt/archive/refs/tags/1.4.1.tar.gz"],
+    integrity = "sha256-XCHe+1svmt1kX0DkX2tOfKHmHtnFeQ/a7HUKIH0uLXo=",
+    strip_prefix = "cpp_toolbelt-1.4.8",
+    urls = ["https://github.com/dallison/cpp_toolbelt/archive/refs/tags/1.4.8.tar.gz"],
 )
 
 # Aspects to extract C++ metadata and fix dependency issues.
@@ -39,6 +39,6 @@ http_archive(
 bazel_dep(name = "bazel_cc_meta", version = "0.0.0")
 git_override(
     module_name = "bazel_cc_meta",
-    commit = "21f19a91f0872c8356fa3381f463ebfb89292504",
+    commit = "ccabddc2a9016b3ee0a620e32ee6e71ecc8aa5f6",
     remote = "https://github.com/mikael-s-persson/bazel_cc_meta.git",
 )
