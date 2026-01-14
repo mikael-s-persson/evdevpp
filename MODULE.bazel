@@ -3,7 +3,6 @@ module(
 )
 
 http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
 bazel_dep(name = "platforms", version = "1.0.0")
@@ -30,11 +29,11 @@ http_archive(
     urls = ["https://github.com/dallison/co/archive/refs/tags/3.0.0.tar.gz"],
 )
 
-# Toolbelt
-git_repository(
+http_archive(
     name = "toolbelt",
-    commit = "0286a5f6da0f256d6ffbc9f6b43cd6b003fe9dbf",
-    remote = "https://github.com/dallison/cpp_toolbelt.git",
+    integrity = "sha256-c3f01XdmasYlT54BhvPL9ljctRV8JoLz2PpX+EWO/S8=",
+    strip_prefix = "cpp_toolbelt-2.0.0",
+    urls = ["https://github.com/dallison/cpp_toolbelt/archive/refs/tags/2.0.0.tar.gz"],
 )
 
 # Aspects to extract C++ metadata and fix dependency issues.
