@@ -19,7 +19,7 @@ bazel_dep(name = "fmt", version = "12.1.0")
 # CLI11 C++ CLI library
 bazel_dep(name = "cli11", version = "2.5.0")
 
-bazel_dep(name = "abseil-cpp", version = "20250512.1")
+bazel_dep(name = "abseil-cpp", version = "20260107.1")
 
 # Coroutines
 http_archive(
@@ -30,7 +30,7 @@ http_archive(
 )
 
 http_archive(
-    name = "toolbelt",
+    name = "cpp_toolbelt",
     integrity = "sha256-c3f01XdmasYlT54BhvPL9ljctRV8JoLz2PpX+EWO/S8=",
     strip_prefix = "cpp_toolbelt-2.0.0",
     urls = ["https://github.com/dallison/cpp_toolbelt/archive/refs/tags/2.0.0.tar.gz"],
@@ -41,7 +41,7 @@ http_archive(
 # bazel run -c dbg @bazel_cc_meta//cc_meta:fix_deps
 http_archive(
     name = "bazel_cc_meta",
-    integrity = "sha256-LznhQ9l2kwHgCkVwYsUJAjlyAM5WlvFrUflTR4atxbw=",
-    strip_prefix = "bazel_cc_meta-0.1.0",
-    urls = ["https://github.com/mikael-s-persson/bazel_cc_meta/archive/refs/tags/v0.1.0.tar.gz"],
+    integrity = "sha256-Lc5fxeJIy4ZoJDqdUf0euyN8oT1SqmAYXZ3rfhBgFe8=",
+    strip_prefix = "bazel_cc_meta-0.1.1",
+    urls = ["https://github.com/mikael-s-persson/bazel_cc_meta/archive/refs/tags/v0.1.1.tar.gz"],
 )

@@ -1,6 +1,7 @@
 load("@rules_python//python:defs.bzl", "py_binary")
 load(":defs.bzl", "cc_dump_defines")
 load("@bazel_cc_meta//cc_meta:cc_meta.bzl", "make_cc_meta_deviations", "refresh_cc_meta")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 
 cc_library(
     name = "evdevpp",
@@ -28,7 +29,7 @@ cc_library(
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/status:statusor",
         "@abseil-cpp//absl/time",
-        "@toolbelt//toolbelt",
+        "@cpp_toolbelt//toolbelt",
     ],
 )
 
